@@ -84,4 +84,13 @@ public class ClientCommandHelper {
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(command))));
     }
 
+    public static Text getViewWikiTOCTextComponent(MutableText translatableText, String pageName) {
+        return getCommandTextComponent(translatableText, String.format("/cwiki %s TOC", pageName));
+    }
+    public static Text getWikiTOCTextComponent(String pageName, String number, String line) {
+        String command = String.format("/cwiki %s %s", pageName, number);
+        return Text.literal(Formatting.BOLD + number + Formatting.RESET + ". " + line).styled(style -> style
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(command))));
+    }
 }

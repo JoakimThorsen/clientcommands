@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.text.Text;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.*;
+import static net.earthcomputer.clientcommands.command.ClientCommandHelper.getViewWikiTOCTextComponent;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
 
 public class WikiCommand {
@@ -15,22 +16,37 @@ public class WikiCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(literal("cwiki")
-            .then(argument("page", greedyString())
-                .executes(ctx -> displayWikiPage(ctx.getSource(), getString(ctx, "page")))));
+            .then(argument("page", string())
+                .executes(ctx -> displayWikiPage(ctx.getSource(), getString(ctx, "page"), "summary"))
+                .then(argument("section", string())
+                    .executes(ctx -> displayWikiPage(ctx.getSource(), getString(ctx, "page"), getString(ctx, "section"))))));
     }
 
-    private static int displayWikiPage(FabricClientCommandSource source, String page) throws CommandSyntaxException {
-        String content = WikiRetriever.getWikiSummary(page);
+    private static int displayWikiPage(FabricClientCommandSource source, String page, String section) throws CommandSyntaxException {
+        String content;
+
+        WikiRetriever.LOGGER.info(section);
+        if (section.equalsIgnoreCase("toc")) {
+            WikiRetriever.LOGGER.info("TOC");
+            WikiRetriever.displayWikiTOC(page, source); // TOC = table of contents
+            return 1;
+        } else if(section.equalsIgnoreCase("summary")) {
+            WikiRetriever.LOGGER.info("Summary");
+            content = WikiRetriever.getWikiSummary(page);
+        } else {
+            WikiRetriever.LOGGER.info("section");
+            content = WikiRetriever.getWikiSection(page, section);
+        }
 
         if (content == null) {
             throw FAILED_EXCEPTION.create();
         }
 
         content = content.trim();
-        for (String line : content.split("\n")) {
+        for (String line : content.replaceAll("\n{2,}","\n\n").split("\n")) {
             source.sendFeedback(Text.literal(line));
         }
-
+        source.sendFeedback(getViewWikiTOCTextComponent(Text.translatable("commands.cwiki.viewTOC"), page));
         return content.length();
     }
 
